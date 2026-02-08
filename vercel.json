@@ -1,12 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "functions": {
-    "api/index.py": {
-      "includeFiles": "webapp.py,mandelbrot.py,templates/**,static/**"
-    }
-  },
   "routes": [
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/api/index.py" }
+    {"handle": "filesystem"}
   ]
 }
