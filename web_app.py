@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Minimal Flask web app to run the mandelbrot generator interactively."""
 from io import BytesIO
-from flask import Flask, request, send_file, render_template_string
+from flask import Flask, request, send_file, render_template_string, render_template
 import mandelbrot
 import os
 from PIL import Image, ImageDraw, ImageFont
 
 app = Flask(__name__)
 
-INDEX_HTML = '''
+M_INDEX_HTML = '''
 <!doctype html>
 <html>
 <head>
@@ -109,8 +109,11 @@ INDEX_HTML = '''
 
 @app.route('/')
 def index():
-    return render_template_string(INDEX_HTML)
+    return render_template('index.html')
 
+@app.route('/mandelbrot')
+def mandelbrot_applet():
+    return render_template_string(M_INDEX_HTML)
 
 @app.route('/render')
 def render_image():
