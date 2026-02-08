@@ -3,33 +3,111 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Mandelbrot Explorer</title>
+    <title>Mandelbrot Interactive</title>
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
     <header>
-      <h1>Mandelbrot Explorer</h1>
-      <nav>
-        <a href="/">Home</a>
-      </nav>
+      <div class="wrap">
+        <h1>Mandelbrot Interactive</h1>
+      </div>
     </header>
 
-    <main>
-      <section class="controls">
-        <label>Iterations: <input id="iter" type="number" value="300" min="10" step="10"></label>
-        <button id="renderBtn">Render</button>
-        <button id="resetBtn">Reset</button>
-        <button id="fitBtn">Fit</button>
-        <span id="coords"></span>
-      </section>
-
-      <div class="canvas-wrap">
-        <canvas id="canvas"></canvas>
+    <main class="wrap main-card">
+      <div class="controls">
+        <div>
+          <label>Width <input id="width" type="number" value="800"></label>
+          <label>Height <input id="height" type="number" value="600"></label>
+        </div>
+        <div>
+          <label>Max Iter <input id="max_iter" type="number" value="300"></label>
+          <label>Scale <input id="scale" type="text" value="1.5"></label>
+        </div>
+        <div>
+          <label>X Center <input id="x_center" type="text" value="-0.5"></label>
+          <label>Y Center <input id="y_center" type="text" value="0.0"></label>
+        </div>
+        <div style="align-self:end">
+          <button id="render">Render</button>
+          <button id="makegif">Make GIF</button>
+        </div>
       </div>
 
-      <p class="hint">Drag to pan. Scroll to zoom. Click to zoom in.</p>
+      <p id="status"></p>
+      <div class="canvas-wrap">
+        <img id="img" src="" alt="mandelbrot result" style="max-width:100%;border:1px solid #ccc">
+      </div>
+      <p class="hint">Click image to zoom. Edit parameters and click Render.</p>
     </main>
 
-    <script src="script.js" type="module"></script>
+    <script>
+      const btn = document.getElementById('render');
+      const img = document.getElementById('img');
+      const status = document.getElementById('status');
+
+      let busy = false;
+      function renderFromFields(){
+        if(busy) return;
+        busy = true;
+        btn.disabled = true;
+        document.getElementById('makegif').disabled = true;
+        const width = Number(document.getElementById('width').value);
+        const height = Number(document.getElementById('height').value);
+        const max_iter = Number(document.getElementById('max_iter').value);
+        const scale = document.getElementById('scale').value;
+        const x_center = document.getElementById('x_center').value;
+        const y_center = document.getElementById('y_center').value;
+        const q = new URLSearchParams({ width, height, max_iter, scale, x_center, y_center });
+        const url = '/api/mandelbrot?' + q.toString();
+        status.textContent = 'Rendering...';
+        img.src = url + '&_=' + Date.now();
+        img.onload = ()=>{ status.textContent = 'Rendered'; busy=false; btn.disabled=false; document.getElementById('makegif').disabled=false; };
+        img.onerror = ()=>{ status.textContent = 'Render failed'; busy=false; btn.disabled=false; document.getElementById('makegif').disabled=false; };
+      }
+
+      btn.addEventListener('click', ()=>{ renderFromFields(); });
+      document.getElementById('makegif').addEventListener('click', ()=>{ alert('GIF generation not yet available'); });
+
+      // Click-to-zoom
+      img.addEventListener('click', function(ev){
+        if(busy) return;
+        if(!img.naturalWidth || !img.naturalHeight) return;
+        const rect = img.getBoundingClientRect();
+        const px = (ev.clientX - rect.left) * (img.naturalWidth / rect.width);
+        const py = (ev.clientY - rect.top) * (img.naturalHeight / rect.height);
+
+        const width = Number(document.getElementById('width').value);
+        const height = Number(document.getElementById('height').value);
+        let scale = Number(document.getElementById('scale').value);
+        let x_center = Number(document.getElementById('x_center').value);
+        let y_center = Number(document.getElementById('y_center').value);
+
+        const x_min = x_center - scale;
+        const x_max = x_center + scale;
+        const y_scale = scale * height / width;
+        const y_min = y_center - y_scale;
+        const y_max = y_center + y_scale;
+
+        const x = x_min + (x_max - x_min) * px / Math.max(1, (width - 1));
+        const y = y_min + (y_max - y_min) * py / Math.max(1, (height - 1));
+
+        x_center = x;
+        y_center = y;
+        scale = scale * 0.25;
+
+        const maxIterEl = document.getElementById('max_iter');
+        const newMax = Math.max(10, Math.min(20000, Math.floor(Number(maxIterEl.value) * 1.25)));
+        maxIterEl.value = newMax;
+
+        document.getElementById('x_center').value = x_center;
+        document.getElementById('y_center').value = y_center;
+        document.getElementById('scale').value = scale;
+
+        renderFromFields();
+      });
+
+      // initial render
+      renderFromFields();
+    </script>
   </body>
 </html>
