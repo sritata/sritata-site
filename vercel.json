@@ -1,12 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "api/index.py": {
-      "runtime": "python",
+    "api/**/*.py": {
+      "maxDuration": 60,
       "includeFiles": "webapp.py,mandelbrot.py,templates/**,static/**"
     }
   },
-  "routes": [
-    { "src": "/(.*)", "dest": "/api/index.py" }
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/api/index" }
   ]
 }
