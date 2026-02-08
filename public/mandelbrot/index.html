@@ -14,20 +14,35 @@
     </header>
 
     <main class="wrap main-card">
+      <p class="top-note">
+        This is a slow web version of a mandelbrot zoom-in app! For a faster Python script you can run locally, visit <a href="https://github.com/sritata/mandelbrot">https://github.com/sritata/mandelbrot</a>. There, you can zoom in faster, and it even generates a GIF of your zoom-in (see example below).
+      </p>
       <div class="controls">
-        <div>
-          <label>Width <input id="width" type="number" value="800"></label>
-          <label>Height <input id="height" type="number" value="600"></label>
+        <div class="field">
+          <label for="width">Width</label>
+          <input id="width" type="number" value="800">
         </div>
-        <div>
-          <label>Max Iter <input id="max_iter" type="number" value="300"></label>
-          <label>Scale <input id="scale" type="text" value="1.5"></label>
+        <div class="field">
+          <label for="height">Height</label>
+          <input id="height" type="number" value="600">
         </div>
-        <div>
-          <label>X Center <input id="x_center" type="text" value="-0.5"></label>
-          <label>Y Center <input id="y_center" type="text" value="0.0"></label>
+        <div class="field">
+          <label for="max_iter">Max Iter</label>
+          <input id="max_iter" type="number" value="300">
         </div>
-        <div style="align-self:end">
+        <div class="field">
+          <label for="scale">Scale</label>
+          <input id="scale" type="text" value="1.5">
+        </div>
+        <div class="field">
+          <label for="x_center">X Center</label>
+          <input id="x_center" type="text" value="-0.5">
+        </div>
+        <div class="field">
+          <label for="y_center">Y Center</label>
+          <input id="y_center" type="text" value="0.0">
+        </div>
+        <div class="field field-action">
           <button id="render">Render</button>
         </div>
       </div>
@@ -37,6 +52,11 @@
         <img id="img" src="" alt="mandelbrot result" style="max-width:100%;border:1px solid #ccc">
       </div>
       <p class="hint">Click image to zoom. Edit parameters and click Render.</p>
+
+      <section class="example-zoom">
+        <h2>Example zoom-in GIF (from the Python app)</h2>
+        <img src="/zoom.gif" alt="Mandelbrot zoom-in animation" class="example-gif">
+      </section>
     </main>
 
     <script>

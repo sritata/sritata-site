@@ -3,8 +3,64 @@ html,body{height:100%;margin:0}
 header{display:flex;align-items:center;gap:1rem;padding:1rem;background:#111;color:#fff}
 header h1{margin:0;font-size:1rem}
 main{padding:1rem}
-.controls{display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem}
+.top-note{
+  margin:0 0 1rem;
+  padding:0.75rem 1rem;
+  background:#f0f4f8;
+  border-left:4px solid #333;
+  font-size:0.95rem;
+  line-height:1.5;
+}
+.top-note a{color:#0066cc}
+.top-note a:hover{text-decoration:underline}
+.controls{
+  display:grid;
+  grid-template-columns:repeat(4, auto 1fr);
+  gap:0.5rem 1rem;
+  align-items:center;
+  margin-bottom:0.75rem;
+  max-width:42rem;
+}
+.controls .field{
+  display:flex;
+  align-items:center;
+  gap:0.5rem;
+  min-height:1.75rem;
+}
+.controls .field label{
+  flex-shrink:0;
+  min-width:5rem;
+  white-space:nowrap;
+}
+.controls .field input{
+  min-width:0;
+  width:6rem;
+}
+.controls .field-action{
+  align-items:flex-end;
+}
+.controls .field-action button{
+  margin-top:0.25rem;
+}
 .canvas-wrap{width:100%;max-width:1000px;border:1px solid #ddd}
 canvas{display:block;width:100%;height:auto}
 .hint{color:#666;font-size:0.9rem}
+.example-zoom{
+  margin-top:2rem;
+  padding-top:1.5rem;
+  border-top:1px solid #ddd;
+}
+.example-zoom h2{
+  margin:0 0 0.75rem;
+  font-size:1.1rem;
+  font-weight:600;
+  color:#333;
+}
+.example-gif{
+  display:block;
+  max-width:800px;
+  width:100%;
+  height:auto;
+  border:1px solid #ccc;
+}
 #coords{margin-left:1rem;color:#333}
