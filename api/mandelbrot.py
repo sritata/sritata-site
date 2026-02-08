@@ -1,9 +1,9 @@
 """Vercel serverless function for Mandelbrot rendering."""
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, urlparse
+from http.server import BaseHTTPRequestHandler
 import numpy as np
 from PIL import Image, ImageDraw
 from io import BytesIO
-import base64
 
 
 def mandelbrot(width, height, max_iter, x_center, y_center, scale):
@@ -44,86 +44,71 @@ def color_map(div_time, max_iter):
     return rgb
 
 
-def handler(request):
-    """Vercel serverless handler for Mandelbrot rendering."""
+def _render_png(width, height, max_iter, x_center, y_center, scale):
+    """Compute mandelbrot and return PNG bytes."""
+    div = mandelbrot(width, height, max_iter, x_center, y_center, scale)
+    img_arr = color_map(div, max_iter)
+    im = Image.fromarray(img_arr, mode='RGB')
     try:
-        # Parse query parameters
-        query_string = request.url.split('?', 1)[1] if '?' in request.url else ''
-        params = parse_qs(query_string)
-        
-        # Extract and validate parameters with defaults
-        width = int(params.get('width', ['800'])[0])
-        height = int(params.get('height', ['600'])[0])
-        max_iter = int(params.get('max_iter', ['300'])[0])
-        x_center = float(params.get('x_center', ['-0.5'])[0])
-        y_center = float(params.get('y_center', ['0.0'])[0])
-        scale = float(params.get('scale', ['1.5'])[0])
-        
-        # Clamp to avoid DoS
-        width = max(50, min(2000, width))
-        height = max(50, min(2000, height))
-        max_iter = max(10, min(20000, max_iter))
-        
-        # Compute mandelbrot
-        div = mandelbrot(width, height, max_iter, x_center, y_center, scale)
-        img_arr = color_map(div, max_iter)
-        im = Image.fromarray(img_arr, mode='RGB')
-        
-        # Draw overlay with scale label
+        draw = ImageDraw.Draw(im, 'RGBA')
+        w, h = im.size
+        bar_w = max(12, int(w * 0.045))
+        padding = max(8, int(w * 0.02))
+        left = w - bar_w - padding
+        right = w - padding
+        top = padding
+        bottom = h - padding
+        thickness = max(2, int(bar_w * 0.25))
+        draw.line([(left, top), (right, top)], fill=(255, 255, 255, 220), width=thickness)
+        draw.line([(right, top), (right, bottom)], fill=(255, 255, 255, 220), width=thickness)
+        draw.line([(left, bottom), (right, bottom)], fill=(255, 255, 255, 220), width=thickness)
         try:
-            draw = ImageDraw.Draw(im, 'RGBA')
-            w, h = im.size
-            bar_w = max(12, int(w * 0.045))
-            padding = max(8, int(w * 0.02))
-            left = w - bar_w - padding
-            right = w - padding
-            top = padding
-            bottom = h - padding
-            thickness = max(2, int(bar_w * 0.25))
-            
-            # Bracket lines
-            draw.line([(left, top), (right, top)], fill=(255, 255, 255, 220), width=thickness)
-            draw.line([(right, top), (right, bottom)], fill=(255, 255, 255, 220), width=thickness)
-            draw.line([(left, bottom), (right, bottom)], fill=(255, 255, 255, 220), width=thickness)
-            
-            # Scale label
+            from PIL import ImageFont
+            font_size = max(12, int(h * 0.04))
             try:
-                from PIL import ImageFont
-                font_size = max(12, int(h * 0.04))
+                font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", font_size)
+            except Exception:
                 try:
-                    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", font_size)
-                except:
-                    try:
-                        font = ImageFont.truetype("Arial.ttf", font_size)
-                    except:
-                        font = ImageFont.load_default()
-                label = f"{scale:.2e}"
-                text_x = left - (bar_w + 40)
-                text_y = top + 6
-                draw.text((text_x, text_y), label, font=font, fill=(255, 255, 255, 255))
-            except:
-                pass
-        except:
+                    font = ImageFont.truetype("Arial.ttf", font_size)
+                except Exception:
+                    font = ImageFont.load_default()
+            label = f"{scale:.2e}"
+            text_x = left - (bar_w + 40)
+            text_y = top + 6
+            draw.text((text_x, text_y), label, font=font, fill=(255, 255, 255, 255))
+        except Exception:
             pass
-        
-        # Encode to PNG
-        buf = BytesIO()
-        im.save(buf, format='PNG')
-        png_bytes = buf.getvalue()
-        
-        # Return response with PNG as base64
-        return {
-            'statusCode': 200,
-            'headers': {
-                'Content-Type': 'image/png',
-                'Cache-Control': 'public, max-age=3600',
-            },
-            'body': base64.b64encode(png_bytes).decode('utf-8'),
-            'isBase64Encoded': True,
-        }
-    except Exception as e:
-        return {
-            'statusCode': 400,
-            'headers': {'Content-Type': 'text/plain'},
-            'body': str(e),
-        }
+    except Exception:
+        pass
+    buf = BytesIO()
+    im.save(buf, format='PNG')
+    return buf.getvalue()
+
+
+class handler(BaseHTTPRequestHandler):
+    """Vercel serverless handler: uses self.path for query string."""
+
+    def do_GET(self):
+        try:
+            parsed = urlparse(self.path)
+            params = parse_qs(parsed.query)
+            width = int(params.get('width', ['800'])[0])
+            height = int(params.get('height', ['600'])[0])
+            max_iter = int(params.get('max_iter', ['300'])[0])
+            x_center = float(params.get('x_center', ['-0.5'])[0])
+            y_center = float(params.get('y_center', ['0.0'])[0])
+            scale = float(params.get('scale', ['1.5'])[0])
+            width = max(50, min(2000, width))
+            height = max(50, min(2000, height))
+            max_iter = max(10, min(20000, max_iter))
+            png_bytes = _render_png(width, height, max_iter, x_center, y_center, scale)
+            self.send_response(200)
+            self.send_header('Content-Type', 'image/png')
+            self.send_header('Cache-Control', 'public, max-age=3600')
+            self.end_headers()
+            self.wfile.write(png_bytes)
+        except Exception as e:
+            self.send_response(400)
+            self.send_header('Content-Type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(str(e).encode('utf-8'))
