@@ -16,24 +16,6 @@ except Exception:
     def prange(x):
         return range(x)
 from PIL import Image
-#!/usr/bin/env python3
-import argparse
-import numpy as np
-try:
-    from numba import njit, prange
-except Exception:
-    # numba not available — provide passthroughs so code can run in pure Python
-    def njit(*dargs, **dkwargs):
-        # support usage as @njit or @njit(...)
-        if dargs and callable(dargs[0]) and not dkwargs:
-            return dargs[0]
-        def _decorator(func):
-            return func
-        return _decorator
-
-    def prange(x):
-        return range(x)
-from PIL import Image
 
 
 @njit(parallel=True, fastmath=True)
