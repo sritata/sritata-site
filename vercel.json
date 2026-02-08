@@ -4,7 +4,7 @@
     { "src": "api/mandelbrot.py", "use": "@vercel/python" }
   ],
   "rewrites": [
-    { "source": "/render", "destination": "/api/mandelbrot" },
+    { "source": "/render", "destination": "/api/mandelbrot.py" },
     { "source": "/api/mandelbrot", "destination": "/api/mandelbrot.py" }
   ]
 }
