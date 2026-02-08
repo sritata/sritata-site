@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Mandelbrot Interactive</title>
+  <style>
+    body{font-family:Arial,sans-serif;padding:12px}
+    .controls{display:flex;gap:8px;flex-wrap:wrap}
+    label{display:block;font-size:0.9rem}
+    input{width:120px}
+  </style>
+</head>
+<body>
+  <h1>Mandelbrot Interactive</h1>
+
+  <!-- Use a REAL GET form: no JS needed to build the querystring -->
+  <form id="controls" class="controls" method="get" action="{{ page_endpoint }}">
+    <div>
+      <label>Width <input name="width" type="number" value="{{ width }}"></label>
+      <label>Height <input name="height" type="number" value="{{ height }}"></label>
+    </div>
+    <div>
+      <label>Max Iter <input name="max_iter" type="number" value="{{ max_iter }}"></label>
+      <label>Scale <input name="scale" type="text" value="{{ scale }}"></label>
+    </div>
+    <div>
+      <label>X Center <input name="x_center" type="text" value="{{ x_center }}"></label>
+      <label>Y Center <input name="y_center" type="text" value="{{ y_center }}"></label>
+    </div>
+    <div style="align-self:end">
+      <button type="submit" id="render">Render</button>
+    </div>
+  </form>
+
+  <p id="status"></p>
+
+  <div style="position:relative; display:inline-block; max-width:100%;">
+    <!-- Server supplies img_url; on page reload it updates automatically -->
+    <img id="img"
+         src="{{ img_url }}"
+         alt="mandelbrot"
+         style="max-width:100%;border:1px solid #ccc"
+         data-width="{{ width }}"
+         data-height="{{ height }}"
+         data-scale="{{ scale }}"
+         data-x-center="{{ x_center }}"
+         data-y-center="{{ y_center }}">
+
+    {% if overlay_url %}
+      <img src="{{ overlay_url }}" alt="overlay"
+           style="position:absolute; right:12px; bottom:12px; width:64px; opacity:0.75; pointer-events:none;">
+    {% endif %}
+  </div>
+
+  <!-- Put state + endpoints into one JSON blob -->
+  <script id="mandel-config" type="application/json">
+    {
+      "pageEndpoint": {{ page_endpoint|tojson }},
+      "zoomFactor": 0.25,
+      "iterGrow": 1.25,
+      "iterMin": 10,
+      "iterMax": 2000
+    }
+  </script>
+
+  <!-- Minimal inline bootstrap; real logic in /static/mandelbrot.js -->
+  <script src="{{ url_for('static', filename='mandelbrot.js') }}"></script>
+</body>
+</html>
+

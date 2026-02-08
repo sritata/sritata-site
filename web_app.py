@@ -1,140 +1,59 @@
 #!/usr/bin/env python3
 """Minimal Flask web app to run the mandelbrot generator interactively."""
 from io import BytesIO
-from flask import Flask, request, send_file, render_template_string, render_template
+from flask import Flask, request, send_file, render_template_string, render_template, url_for
 import mandelbrot
 import os
 from PIL import Image, ImageDraw, ImageFont
 
 app = Flask(__name__)
 
-M_INDEX_HTML = '''
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Mandelbrot Interactive</title>
-  <style>body{font-family:Arial,sans-serif;padding:12px} .controls{display:flex;gap:8px;flex-wrap:wrap} label{display:block;font-size:0.9rem} input{width:120px}</style>
-</head>
-<body>
-  <h1>Mandelbrot Interactive</h1>
-  <div class="controls">
-    <div>
-      <label>Width <input id="width" type="number" value="800"></label>
-      <label>Height <input id="height" type="number" value="600"></label>
-    </div>
-    <div>
-      <label>Max Iter <input id="max_iter" type="number" value="300"></label>
-      <label>Scale <input id="scale" type="text" value="1.5"></label>
-    </div>
-    <div>
-      <label>X Center <input id="x_center" type="text" value="-0.5"></label>
-      <label>Y Center <input id="y_center" type="text" value="0.0"></label>
-    </div>
-    <div style="align-self:end">
-      <button id="render">Render</button>
-    </div>
-  </div>
-  <p id="status"></p>
-  <div><img id="img" src="" alt="mandelbrot" style="max-width:100%;border:1px solid #ccc"></div>
+def _render_page_for_params(width, height, max_iter, x_center, y_center, scale):
+    # cache-bust so repeated same params re-fetch
+    img_url = url_for(
+        'render_image_png',
+        width=width, height=height, max_iter=max_iter,
+        x_center=x_center, y_center=y_center, scale=scale,
+        _=str(int(__import__("time").time() * 1000))
+    )
 
-  <script>
-    const btn = document.getElementById('render');
-    const img = document.getElementById('img');
-    const status = document.getElementById('status');
+    # OPTIONAL overlay (put overlay.png in ./static/overlay.png)
+    overlay_url = url_for('static', filename='overlay.png') if os.path.exists(
+        os.path.join(app.static_folder, 'overlay.png')
+    ) else None
 
-    let busy = false;
-    function renderFromFields(){
-      if(busy) return;
-      busy = true;
-      btn.disabled = true;
-      const width = Number(document.getElementById('width').value);
-      const height = Number(document.getElementById('height').value);
-      const max_iter = Number(document.getElementById('max_iter').value);
-      const scale = document.getElementById('scale').value;
-      const x_center = document.getElementById('x_center').value;
-      const y_center = document.getElementById('y_center').value;
-      const q = new URLSearchParams({ width, height, max_iter, scale, x_center, y_center });
-      const url = '/render?' + q.toString();
-      status.textContent = 'Rendering...';
-      img.src = url + '&_=' + Date.now();
-      img.onload = ()=>{ status.textContent = 'Rendered'; busy=false; btn.disabled=false; };
-      img.onerror = ()=>{ status.textContent = 'Render failed'; busy=false; btn.disabled=false; };
-    }
+    return render_template(
+        'mandelbrot.html',
+        width=width, height=height, max_iter=max_iter,
+        x_center=x_center, y_center=y_center, scale=scale,
+        img_url=img_url,
+        overlay_url=overlay_url,                 # now defined
+        page_endpoint=url_for('render_page'),    # used by your template/form
+    )
 
-    btn.addEventListener('click', ()=>{ renderFromFields(); });
-
-    img.addEventListener('click', function(ev){
-      if(busy) return;
-      if(!img.naturalWidth || !img.naturalHeight) return;
-      const rect = img.getBoundingClientRect();
-      const px = (ev.clientX - rect.left) * (img.naturalWidth / rect.width);
-      const py = (ev.clientY - rect.top) * (img.naturalHeight / rect.height);
-
-      const width = Number(document.getElementById('width').value);
-      const height = Number(document.getElementById('height').value);
-      let scale = Number(document.getElementById('scale').value);
-      let x_center = Number(document.getElementById('x_center').value);
-      let y_center = Number(document.getElementById('y_center').value);
-
-      const x_min = x_center - scale;
-      const x_max = x_center + scale;
-      const y_scale = scale * height / width;
-      const y_min = y_center - y_scale;
-      const y_max = y_center + y_scale;
-
-      const x = x_min + (x_max - x_min) * px / Math.max(1, (width - 1));
-      const y = y_min + (y_max - y_min) * py / Math.max(1, (height - 1));
-
-      x_center = x;
-      y_center = y;
-      scale = scale * 0.25;
-
-      const maxIterEl = document.getElementById('max_iter');
-      const newMax = Math.max(10, Math.min(2000, Math.floor(Number(maxIterEl.value) * 1.25)));
-      maxIterEl.value = newMax;
-
-      document.getElementById('x_center').value = x_center;
-      document.getElementById('y_center').value = y_center;
-      document.getElementById('scale').value = scale;
-
-      renderFromFields();
-    });
-  </script>
-</body>
-</html>
-'''
-
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/mandelbrot')
-def mandelbrot_applet():
-    return render_template_string(M_INDEX_HTML)
-
-@app.route('/render')
-def render_image():
+def _parse_params(args):
     try:
-        width = int(request.args.get('width', 800))
-        height = int(request.args.get('height', 600))
-        max_iter = int(request.args.get('max_iter', 300))
-        x_center = float(request.args.get('x_center', -0.5))
-        y_center = float(request.args.get('y_center', 0.0))
-        scale = float(request.args.get('scale', 1.5))
+        width = int(args.get('width', 800))
+        height = int(args.get('height', 600))
+        max_iter = int(args.get('max_iter', 300))
+        x_center = float(args.get('x_center', -0.5))
+        y_center = float(args.get('y_center', 0.0))
+        scale = float(args.get('scale', 1.5))
     except Exception:
-        return 'Bad parameters', 400
+        return None
 
     width = max(50, min(2000, width))
     height = max(50, min(2000, height))
     max_iter = max(10, min(20000, max_iter))
+    return width, height, max_iter, x_center, y_center, scale
 
+
+def _render_mandelbrot_png_bytes(width, height, max_iter, x_center, y_center, scale) -> bytes:
     div = mandelbrot.mandelbrot(width, height, max_iter, x_center, y_center, scale)
     arr = mandelbrot.color_map(div, max_iter)
     im = Image.fromarray(arr, mode='RGB')
-    
+
+    # Optional scale bar overlay (your code)
     try:
         draw = ImageDraw.Draw(im, 'RGBA')
         w, h = im.size
@@ -145,11 +64,11 @@ def render_image():
         top = padding
         bottom = h - padding
         thickness = max(2, int(bar_w * 0.25))
-        
+
         draw.line([(left, top), (right, top)], fill=(255, 255, 255, 220), width=thickness)
         draw.line([(right, top), (right, bottom)], fill=(255, 255, 255, 220), width=thickness)
         draw.line([(left, bottom), (right, bottom)], fill=(255, 255, 255, 220), width=thickness)
-        
+
         try:
             font_size = max(12, int(h * 0.04))
             try:
@@ -167,12 +86,48 @@ def render_image():
             pass
     except Exception:
         pass
-    
+
     buf = BytesIO()
     im.save(buf, format='PNG')
-    buf.seek(0)
-    return send_file(buf, mimetype='image/png')
+    return buf.getvalue()
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+
+@app.get('/mandelbrot')
+def mandelbrot_page():
+    parsed = _parse_params(request.args)
+    if parsed is None:
+        # no params (or bad params) => use defaults
+        parsed = (800, 600, 300, -0.5, 0.0, 1.5)
+    width, height, max_iter, x_center, y_center, scale = parsed
+    return _render_page_for_params(width, height, max_iter, x_center, y_center, scale)
+
+
+@app.get('/render')
+def render_page():
+    # This returns the SAME HTML page, but with img_url pointing at /render.png?...
+    parsed = _parse_params(request.args)
+    if parsed is None:
+        return 'Bad parameters', 400
+    width, height, max_iter, x_center, y_center, scale = parsed
+    return _render_page_for_params(width, height, max_iter, x_center, y_center, scale)
+
+
+@app.get('/render.png')
+def render_image_png():
+    # Raw PNG bytes endpoint used by the HTML page's <img src="...">
+    parsed = _parse_params(request.args)
+    if parsed is None:
+        return 'Bad parameters', 400
+    width, height, max_iter, x_center, y_center, scale = parsed
+
+    png_bytes = _render_mandelbrot_png_bytes(width, height, max_iter, x_center, y_center, scale)
+    return send_file(BytesIO(png_bytes), mimetype='image/png')
+
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80, debug=True)
+    app.run(host='0.0.0.0', port=80, debug=True, threaded=False)
