@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Mandelbrot Interactive</title>
+  <title>Mandelbrot Interactive — Sritata</title>
+  <link rel="stylesheet" href="/style.css">
   <style>
     body{font-family:Arial,sans-serif;padding:12px}
     .controls{display:flex;gap:8px;flex-wrap:wrap}
@@ -12,7 +13,24 @@
   </style>
 </head>
 <body>
-  <h1>Mandelbrot Interactive</h1>
+  <header class="site-header">
+    <div class="wrap">
+      <h1 class="site-title">Sritata</h1>
+      <nav class="site-nav">
+        <a href="#">CV</a>
+        <a href="https://arxiv.org/search/?searchtype=author&query=Tata%2C+Sri">My Papers</a>
+        <div class="nav-dropdown">
+          <button type="button" class="nav-dropdown-trigger" aria-haspopup="true" aria-expanded="false">Toy Projects ▾</button>
+          <div class="nav-dropdown-menu" role="menu">
+            <a href="/mandelbrot" role="menuitem">Explore Mandelbrot</a>
+          </div>
+        </div>
+        <a href="/Sri%20Tata%20Resume.pdf" target="_blank" rel="noopener">Resume</a>
+      </nav>
+    </div>
+  </header>
+  <div class="wrap main-card">
+  <h2>Mandelbrot Interactive</h2>
 
   <!-- Use a REAL GET form: no JS needed to build the querystring -->
   <form id="controls" class="controls" method="get" action="{{ page_endpoint }}">
@@ -66,7 +84,7 @@
 
   <!-- Minimal inline bootstrap; real logic in /static/mandelbrot.js -->
   <script src="{{ url_for('static', filename='mandelbrot.js') }}"></script>
-
+  </div>
 </body>
 </html>
 

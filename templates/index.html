@@ -3,12 +3,11 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width,initial-scale=1">
-	<title>Home — Quantitative Researcher</title>
-	<link rel="stylesheet" href="public/style.css">
+	<title>Home — Sritata</title>
+	<link rel="stylesheet" href="/style.css">
 	<style>
-		body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;max-width:920px;margin:3rem auto;padding:0 1rem;color:#111}
-		header{margin-bottom:1.2rem}
-		h1{margin:0 0 .25rem 0;font-size:1.6rem}
+		body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;max-width:920px;margin:0 auto;padding:0 1rem;color:#111}
+		.main-card{margin:1rem auto}
 		.subtitle{color:#444;margin:0 0 1rem 0}
 		.bio{line-height:1.6;font-size:1rem}
 		.actions a{display:inline-block;margin-top:1rem;padding:.6rem 1rem;background:#111;color:#fff;border-radius:6px;text-decoration:none}
@@ -17,9 +16,21 @@
 	</style>
 </head>
 <body>
-	<header>
-		<h1>Quantitative Researcher</h1>
-		<p class="subtitle">PhD candidate in Mathematics &amp; Physics, Yale</p>
+	<header class="site-header">
+		<div class="wrap">
+			<h1 class="site-title">Sritata</h1>
+			<nav class="site-nav">
+				<a href="#">CV</a>
+				<a href="https://arxiv.org/search/?searchtype=author&query=Tata%2C+Sri">My Papers</a>
+				<div class="nav-dropdown">
+					<button type="button" class="nav-dropdown-trigger" aria-haspopup="true" aria-expanded="false">Toy Projects ▾</button>
+					<div class="nav-dropdown-menu" role="menu">
+						<a href="/mandelbrot" role="menuitem">Explore Mandelbrot</a>
+					</div>
+				</div>
+				<a href="/Sri%20Tata%20Resume.pdf" target="_blank" rel="noopener">Resume</a>
+			</nav>
+		</div>
 	</header>
 
 	<main>
